@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Code Scanner & Generator</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+    h2 {
+      margin-top: 30px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+    }
+    #reader {
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 20px;
+    }
+    #qr-result {
+      font-size: 1.2em;
+      color: green;
+    }
+    input, select, button {
+      margin: 5px 0;
+      padding: 8px;
+      width: 100%;
+      max-width: 400px;
+    }
+    canvas, img {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>QR Code Scanner & Generator</h1>
+
+    <h2>Live QR Scanner</h2>
+    <div id="reader"></div>
+    <div id="qr-result">Scan a QR code to see the result here.</div>
+
+    <h2>Upload QR Image</h2>
+    <input type="file" accept="image/*" onchange="scanUploadedImage(this)">
+
+    <h2>Generate QR Code</h2>
+    <input type="text" id="qr-text" placeholder="Enter text or URL">
+    </p>
+    <label for="ec-level">Error Correction Level:</label>
+    <select id="ec-level">
+      <option value="L">L - Low</option>
+      <option value="M" selected>M - Medium</option>
+      <option value="Q">Q - Quartile</option>
+      <option value="H">H - High</option>
+    </select>
+	<label for="qr-size">Enter Size of the code:</label>
+	<input type="number" id="qr-size" placeholder="Size (e.g., 200)" value="200">
+    <button onclick="generateQRCode()">Generate QR</button>
+    <div id="qrcode"></div>
+  </div>
+
+  <script>
+    // QR Scanner
+    const qrResult = document.getElementById('qr-result');
+    const html5QrCode = new Html5Qrcode("reader");
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        const cameraId = devices[0].id;
+        html5QrCode.start(
+          cameraId,
+          {
+            fps: 10,
+            qrbox: 250
+          },
+          qrCodeMessage => {
+            qrResult.textContent = "Scanned Result: " + qrCodeMessage;
+          },
+          errorMessage => {
+            // Ignore scan errors
+          }
+        );
+      }
+    }).catch(err => {
+      qrResult.textContent = "Camera not accessible or denied.";
+    });
+
+    // Image Upload Scanner
+    function scanUploadedImage(input) {
+      if (input.files.length === 0) return;
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        const imageData = e.target.result;
+        Html5Qrcode.scanFile(imageData, true)
+          .then(qrCodeMessage => {
+            qrResult.textContent = "Image Scan Result: " + qrCodeMessage;
+          })
+          .catch(err => {
+            qrResult.textContent = "Could not read QR from image.";
+          });
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+
+    // QR Generator
+    function generateQRCode() {
+      const container = document.getElementById("qrcode");
+      container.innerHTML = ""; // clear old code
+
+      const text = document.getElementById("qr-text").value;
+      const ecLevel = document.getElementById("ec-level").value;
+      const size = parseInt(document.getElementById("qr-size").value) || 200;
+
+      if (!text.trim()) {
+        alert("Please enter text to encode.");
+        return;
+      }
+
+      new QRCode(container, {
+        text: text,
+        width: size,
+        height: size,
+        correctLevel: QRCode.CorrectLevel[ecLevel]
+      });
+    }
+  </script>
+</body>
+</html>
